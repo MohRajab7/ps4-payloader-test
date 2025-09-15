@@ -1,39 +1,99 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Firmware Updater</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-        .container { max-width: 500px; margin: 0 auto; }
-        input, button { padding: 10px; margin: 10px; }
-        #status { margin-top: 20px; padding: 10px; border-radius: 5px; }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
-        .loading { background-color: #fff3cd; color: #856404; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PS4 Browser Bin Loader</title>
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+    color: white;
+    padding: 20px;
+}
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: rgba(0,0,0,0.7);
+    padding: 20px;
+    border-radius: 10px;
+}
+button {
+    padding: 12px 20px;
+    font-size: 16px;
+    margin-top: 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    border: none;
+    background-color: #3498db;
+    color: white;
+}
+.logs {
+    margin-top: 20px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #2d3436;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: monospace;
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>Device Firmware Update</h1>
-        <p>Select the <strong>.bin</strong> file to send to your device.</p>
-        
-        <input type="file" id="fileInput" accept=".bin" />
-        <br>
-        <button onclick="uploadFile()">Send to Device</button>
-        
-        <div id="status"></div>
-    </div>
+<div class="container">
+<h1>PS4 Browser Bin Loader</h1>
 
-    <script>
-        // Function to get the device's current IP (best effort)
-        // This is useful for displaying info, but we'll use the known IP for the upload
-        function getDeviceIP() {
-            // This is a simple trick that often works for getting the local IP
-            return new Promise((resolve) => {
-                const RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-                if (!RTCPeerConnection) {
-                    resolve('unknown');
+<label for="payload-select">Select a payload:</label>
+<select id="payload-select">
+    <option value="disable-updates.bin">disable-updates.bin</option>
+    <option value="other-payload.bin">other-payload.bin</option>
+</select>
+
+<button id="load-btn">Load Payload</button>
+
+<div class="logs" id="logs">Logs will appear here...</div>
+</div>
+
+<script>
+const baseURL = "https://kmeps4.github.io/psfree900m/bins/"; // Change to your GitHub Pages bin folder
+const logs = document.getElementById("logs");
+
+function log(msg) {
+    logs.innerHTML += msg + "<br>";
+    logs.scrollTop = logs.scrollHeight;
+}
+
+document.getElementById("load-btn").addEventListener("click", async () => {
+    const fileName = document.getElementById("payload-select").value;
+    const url = baseURL + fileName;
+
+    log(`Fetching payload: ${fileName} ...`);
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Failed to fetch payload");
+
+        const arrayBuffer = await response.arrayBuffer();
+        const size = arrayBuffer.byteLength;
+        log(`Payload loaded (${size} bytes)`);
+
+        // Here you can trigger your PS4 browser payload routine
+        // For example: convert to Blob, then inject into exploit routine
+        const blob = new Blob([arrayBuffer], {type: "application/octet-stream"});
+        log(`Blob created: ${blob.size} bytes`);
+
+        // Example: pseudo call to your payload execution
+        // executePayload(blob);
+
+        log("Ready to execute payload on PS4 browser.");
+    } catch (err) {
+        log("Error loading payload: " + err);
+    }
+});
+</script>
+</body>
+</html>
                     return;
                 }
 
