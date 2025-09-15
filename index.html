@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firmware Updater</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        input, button { padding: 10px; margin: 10px; }
+        #status { margin-top: 20px; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .loading { background-color: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Device Firmware Update</h1>
+        <p>Select the <strong>.bin</strong> file to send to your device.</p>
+        
+        <input type="file" id="fileInput" accept=".bin" />
+        <br>
+        <button onclick="uploadFile()">Send to Device</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // Function to get the device's current IP (best effort)
+        // This is useful for displaying info, but we'll use the known IP for the upload
+        function getDeviceIP() {
+            // This is a simple trick that often works for getting the local IP
+            return new Promise((resolve) => {
+                const RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+                if (!RTCPeerConnection) {
+                    resolve('unknown');
+                    return;
+                }
+
+                const pc = new RTCPeerConnection({ iceServers: [] });
+                pc.createDataChannel("");
+                pc.createOffer().then(offer => pc.setLocalDescription(offer))
+                .catch(() => resolve('unknown'));
+
+                pc.onicecandidate = (ice) => {
+                    if (ice && ice.candidate && ice.candidate.candidate) {
+                        const myIP = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate)[1];
+                        pc.onicecandidate = () => {};
+                        resolve(myIP);
+                    }
+                };
+            });
+        }
+
+        // Main upload function
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const statusElement = document.getElementById('status');
+
+            if (!file) {
+                showStatus('Please select a .bin file first.', 'error');
+                return;
+            }
+
+            // Use the device's known IP and port
+            // REPLACE THESE VALUES WITH YOUR DEVICE'S ACTUAL IP AND PORT
+            const deviceIP = '192.168.1.150'; // Your device's IP on the local network
+            const devicePort = '8080';         // Your device's listening port
+            const serverUrl = `http://${deviceIP}:${devicePort}/update`; // Your device's endpoint
+
+            showStatus('Reading file...', 'loading');
+
+            try {
+                // Read the file as an ArrayBuffer (perfect for binary files)
+                const fileBuffer = await file.arrayBuffer();
+
+                showStatus('Sending to device...', 'loading');
+
+                // Send the binary data directly in the request body
+                const response = await fetch(serverUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/octet-stream',
+                        'X-Filename': file.name // Send filename as a header
+                    },
+                    body: fileBuffer
+                });
+
+                if (response.ok) {
+                    const result = await response.text();
+                    showStatus(`Success! Device responded: ${result}`, 'success');
+                } else {
+                    showStatus(`Device rejected the file. Status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Failed to send: ${error.message}. Check IP/port and ensure the device server is running.`, 'error');
+                console.error('Error details:', error);
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = type;
+        }
+
+        // On page load, try to show the device IP
+        window.onload = async function() {
+            const ip = await getDeviceIP();
+            document.getElementById('status').textContent = `Ready. Device IP detected as: ${ip}`;
+        };
+    </script>
+</body>
+</html>
