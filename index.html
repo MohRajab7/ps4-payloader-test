@@ -1,109 +1,377 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PS4 Auto Bin Loader</title>
-<style>
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-    padding: 20px;
-    color: #fff;
-}
-.container {
-    max-width: 600px;
-    margin: auto;
-    background: rgba(0,0,0,0.85);
-    padding: 20px;
-    border-radius: 12px;
-}
-h1 { text-align:center; color:#2ecc71; }
-input, button { padding: 10px; margin-top:10px; width:100%; font-size:16px; }
-.logs { margin-top:20px; background:#111; padding:10px; font-family: monospace; max-height:200px; overflow-y:auto; }
-.progress-bar { width:100%; height:20px; background:#333; border-radius:10px; overflow:hidden; margin-top:10px;}
-.progress { height:100%; width:0%; background:#2ecc71;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PS4 GoldHEN BinLoader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #fdbb2d;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .status-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .status-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00c9ff, #92fe9d);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .ip-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #92fe9d;
+            margin: 15px 0;
+            word-break: break-all;
+        }
+        
+        .btn {
+            background: linear-gradient(90deg, #00c9ff, #92fe9d);
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            font-weight: bold;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .manual-input {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        input {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            margin: 10px;
+            width: 150px;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #00c9ff;
+        }
+        
+        .instructions ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .instructions li:before {
+            content: "•";
+            color: #fdbb2d;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+            font-size: 1.2rem;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-    <h1>PS4 Auto Bin Loader</h1>
-    
-    <div>
-        <label>Fallback PS4 IP (if auto fails):</label>
-        <input type="text" id="ps4-ip" placeholder="192.168.x.x">
+    <div class="container">
+        <h1>PS4 GoldHEN BinLoader</h1>
+        
+        <div class="status-box">
+            <div class="status-text" id="status">Initializing PS4 detection...</div>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="ip-display" id="ipDisplay"></div>
+        </div>
+        
+        <button class="btn" id="scanBtn" onclick="startScan()">Start Detection</button>
+        <button class="btn" onclick="showManualInput()">Enter IP Manually</button>
+        
+        <div class="manual-input" id="manualInput">
+            <input type="text" id="ipInput" placeholder="192.168.1.x">
+            <button class="btn" onclick="goToManualIP()">Go to BinLoader</button>
+        </div>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ul>
+                <li>Ensure your PS4 is jailbroken and GoldHEN is running</li>
+                <li>Your PS4 and this device must be on the same network</li>
+                <li>Click "Start Detection" to automatically find your PS4</li>
+                <li>If automatic detection fails, enter your PS4's IP manually</li>
+                <li>The binloader is typically accessible at port 9090</li>
+            </ul>
+        </div>
     </div>
 
-    <button id="send-btn">Send Payload</button>
-
-    <div class="progress-bar"><div class="progress" id="progress"></div></div>
-    <div class="logs" id="logs">Logs will appear here...</div>
-</div>
-
-<script>
-const BIN_URL = "https://raw.githubusercontent.com/MohRajab7/ps4-payloader-test/refs/heads/main/bins/disable-updates.bin"; // change to your bin path
-const DEFAULT_PORT = 9090;
-
-const logs = document.getElementById("logs");
-const progress = document.getElementById("progress");
-const ipInput = document.getElementById("ps4-ip");
-const sendBtn = document.getElementById("send-btn");
-
-function log(msg) {
-    logs.innerHTML += msg + "<br>";
-    logs.scrollTop = logs.scrollHeight;
-}
-
-async function fetchBin() {
-    log(`Fetching payload: disable-updates ...`);
-    const response = await fetch(BIN_URL);
-    if (!response.ok) throw new Error("Failed to fetch payload");
-    const arrayBuffer = await response.arrayBuffer();
-    log(`Payload loaded (${arrayBuffer.byteLength} bytes)`);
-    return new Uint8Array(arrayBuffer);
-}
-
-async function sendToPS4(uint8array, ip) {
-    const url = `http://${ip}:${DEFAULT_PORT}/`;
-    log(`Sending payload to ${url} ...`);
-
-    // send using fetch POST
-    const blob = new Blob([uint8array]);
-    try {
-        const resp = await fetch(url, {
-            method: "POST",
-            body: blob
-        });
-        if (resp.ok) {
-            log("✅ Payload sent successfully!");
-            progress.style.width = "100%";
-        } else {
-            log(`❌ Failed to send payload: ${resp.status}`);
+    <script>
+        const statusEl = document.getElementById('status');
+        const progressEl = document.getElementById('progress');
+        const ipDisplayEl = document.getElementById('ipDisplay');
+        const scanBtn = document.getElementById('scanBtn');
+        const manualInput = document.getElementById('manualInput');
+        const ipInput = document.getElementById('ipInput');
+        
+        // Common subnets to scan
+        const commonSubnets = [
+            '192.168.0.', 
+            '192.168.1.', 
+            '10.0.0.', 
+            '172.16.0.'
+        ];
+        
+        // Common ports used by GoldHEN
+        const ports = [9090, 9020, 8080];
+        
+        function updateStatus(text, progress) {
+            statusEl.textContent = text;
+            progressEl.style.width = progress + '%';
         }
-    } catch(e) {
-        log(`❌ Error sending payload: ${e}`);
-    }
-}
-
-async function main() {
-    sendBtn.disabled = true;
-    let ps4Ip = "127.0.0.1"; // default to localhost
-    if(ipInput.value) ps4Ip = ipInput.value;
-
-    try {
-        const payload = await fetchBin();
-        await sendToPS4(payload, ps4Ip);
-    } catch(e) {
-        log("❌ Error: " + e);
-    } finally {
-        sendBtn.disabled = false;
-    }
-}
-
-sendBtn.addEventListener("click", main);
-
-// Optionally auto-trigger on page load
-// window.addEventListener("load", main);
-</script>
+        
+        function startScan() {
+            updateStatus('Scanning network for PS4...', 10);
+            scanBtn.disabled = true;
+            ipDisplayEl.textContent = '';
+            
+            // Try to get local IP information first
+            getLocalIPs().then(localIPs => {
+                updateStatus('Checking common subnets for PS4...', 30);
+                
+                // Scan common subnets for PS4
+                scanNetworks(localIPs);
+            }).catch(error => {
+                updateStatus('Error getting network information', 0);
+                scanBtn.disabled = false;
+                console.error('Error:', error);
+            });
+        }
+        
+        async function getLocalIPs() {
+            return new Promise((resolve, reject) => {
+                // Try using WebRTC to get local IP addresses
+                const RTCPeerConnection = window.RTCPeerConnection || 
+                                          window.mozRTCPeerConnection || 
+                                          window.webkitRTCPeerConnection;
+                
+                if (!RTCPeerConnection) {
+                    reject(new Error('WebRTC not supported'));
+                    return;
+                }
+                
+                const pc = new RTCPeerConnection({iceServers: []});
+                const ips = [];
+                
+                pc.createDataChannel('');
+                pc.createOffer()
+                    .then(offer => pc.setLocalDescription(offer))
+                    .catch(reject);
+                
+                pc.onicecandidate = event => {
+                    if (!event.candidate) {
+                        // All candidates have been gathered
+                        resolve(ips);
+                        return;
+                    }
+                    
+                    const candidate = event.candidate.candidate;
+                    const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+                    const match = candidate.match(ipRegex);
+                    
+                    if (match) {
+                        const ip = match[1];
+                        if (ips.indexOf(ip) === -1) {
+                            ips.push(ip);
+                        }
+                    }
+                };
+            });
+        }
+        
+        async function scanNetworks(localIPs) {
+            // Determine which subnet to scan based on local IP
+            let targetSubnet = '192.168.1.';
+            
+            if (localIPs && localIPs.length > 0) {
+                const localIP = localIPs[0];
+                const ipParts = localIP.split('.');
+                ipParts[3] = '';
+                targetSubnet = ipParts.join('.');
+            }
+            
+            updateStatus(`Scanning subnet ${targetSubnet}*, please wait...`, 50);
+            
+            // Try to find the PS4 by testing common ports
+            let found = false;
+            
+            for (let i = 1; i < 255; i++) {
+                const ip = targetSubnet + i;
+                
+                // Skip our own IP
+                if (localIPs.includes(ip)) continue;
+                
+                for (const port of ports) {
+                    if (await checkPort(ip, port)) {
+                        found = true;
+                        updateStatus(`PS4 found at ${ip}:${port}`, 100);
+                        ipDisplayEl.textContent = `${ip}:${port}`;
+                        
+                        // Redirect after a short delay
+                        setTimeout(() => {
+                            window.location.href = `http://${ip}:${port}`;
+                        }, 2000);
+                        
+                        break;
+                    }
+                }
+                
+                if (found) break;
+                
+                // Update progress
+                if (i % 10 === 0) {
+                    updateStatus(`Scanning... checked ${i} addresses`, 50 + (i / 254) * 40);
+                }
+            }
+            
+            if (!found) {
+                updateStatus('PS4 not found automatically', 100);
+                ipDisplayEl.textContent = 'Please try manual IP entry';
+                scanBtn.disabled = false;
+            }
+        }
+        
+        async function checkPort(ip, port) {
+            return new Promise((resolve) => {
+                const timeout = 100;
+                const img = new Image();
+                
+                img.onerror = function() {
+                    clearTimeout(timer);
+                    // This might be the PS4 - GoldHEN often returns errors for image requests
+                    resolve(true);
+                };
+                
+                img.onload = function() {
+                    clearTimeout(timer);
+                    resolve(false);
+                };
+                
+                const timer = setTimeout(function() {
+                    img.src = '';
+                    resolve(false);
+                }, timeout);
+                
+                img.src = `http://${ip}:${port}/favicon.ico?t=${new Date().getTime()}`;
+            });
+        }
+        
+        function showManualInput() {
+            manualInput.style.display = 'block';
+        }
+        
+        function goToManualIP() {
+            const ip = ipInput.value.trim();
+            if (!ip) {
+                alert('Please enter an IP address');
+                return;
+            }
+            
+            window.location.href = `http://${ip}:9090`;
+        }
+        
+        // Start scanning automatically when page loads
+        window.onload = function() {
+            setTimeout(startScan, 1000);
+        };
+    </script>
 </body>
 </html>
