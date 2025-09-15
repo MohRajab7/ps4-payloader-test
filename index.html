@@ -56,7 +56,7 @@ button {
 </div>
 
 <script>
-const baseURL = "https://kmeps4.github.io/psfree900m/bins/"; // Change to your GitHub Pages bin folder
+const baseURL = "https://raw.githubusercontent.com/MohRajab7/ps4-payloader-test/refs/heads/main/bins/disable-updates.bin"; // Change to your GitHub Pages bin folder
 const logs = document.getElementById("logs");
 
 function log(msg) {
@@ -65,10 +65,10 @@ function log(msg) {
 }
 
 document.getElementById("load-btn").addEventListener("click", async () => {
-    const fileName = document.getElementById("payload-select").value;
-    const url = baseURL + fileName;
+    
+    const url = baseURL;
 
-    log(`Fetching payload: ${fileName} ...`);
+    log(`Fetching payload: disable-updates ...`);
 
     try {
         const response = await fetch(url);
