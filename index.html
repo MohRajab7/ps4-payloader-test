@@ -3,94 +3,107 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PS4 Browser Bin Loader</title>
+<title>PS4 Auto Bin Loader</title>
 <style>
 body {
     font-family: 'Segoe UI', sans-serif;
     background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-    color: white;
     padding: 20px;
+    color: #fff;
 }
 .container {
     max-width: 600px;
-    margin: 0 auto;
-    background: rgba(0,0,0,0.7);
+    margin: auto;
+    background: rgba(0,0,0,0.85);
     padding: 20px;
-    border-radius: 10px;
+    border-radius: 12px;
 }
-button {
-    padding: 12px 20px;
-    font-size: 16px;
-    margin-top: 10px;
-    cursor: pointer;
-    border-radius: 6px;
-    border: none;
-    background-color: #3498db;
-    color: white;
-}
-.logs {
-    margin-top: 20px;
-    max-height: 200px;
-    overflow-y: auto;
-    background: #2d3436;
-    color: white;
-    padding: 10px;
-    border-radius: 6px;
-    font-family: monospace;
-}
+h1 { text-align:center; color:#2ecc71; }
+input, button { padding: 10px; margin-top:10px; width:100%; font-size:16px; }
+.logs { margin-top:20px; background:#111; padding:10px; font-family: monospace; max-height:200px; overflow-y:auto; }
+.progress-bar { width:100%; height:20px; background:#333; border-radius:10px; overflow:hidden; margin-top:10px;}
+.progress { height:100%; width:0%; background:#2ecc71;}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>PS4 Browser Bin Loader</h1>
+    <h1>PS4 Auto Bin Loader</h1>
+    
+    <div>
+        <label>Fallback PS4 IP (if auto fails):</label>
+        <input type="text" id="ps4-ip" placeholder="192.168.x.x">
+    </div>
 
-<label for="payload-select">Select a payload:</label>
-<select id="payload-select">
-    <option value="disable-updates.bin">disable-updates.bin</option>
-    <option value="other-payload.bin">other-payload.bin</option>
-</select>
+    <button id="send-btn">Send Payload</button>
 
-<button id="load-btn">Load Payload</button>
-
-<div class="logs" id="logs">Logs will appear here...</div>
+    <div class="progress-bar"><div class="progress" id="progress"></div></div>
+    <div class="logs" id="logs">Logs will appear here...</div>
 </div>
 
 <script>
-const baseURL = "https://raw.githubusercontent.com/MohRajab7/ps4-payloader-test/refs/heads/main/bins/disable-updates.bin"; // Change to your GitHub Pages bin folder
+const BIN_URL = "https://raw.githubusercontent.com/MohRajab7/ps4-payloader-test/refs/heads/main/bins/disable-updates.bin"; // change to your bin path
+const DEFAULT_PORT = 9090;
+
 const logs = document.getElementById("logs");
+const progress = document.getElementById("progress");
+const ipInput = document.getElementById("ps4-ip");
+const sendBtn = document.getElementById("send-btn");
 
 function log(msg) {
     logs.innerHTML += msg + "<br>";
     logs.scrollTop = logs.scrollHeight;
 }
 
-document.getElementById("load-btn").addEventListener("click", async () => {
-    
-    const url = baseURL;
-
+async function fetchBin() {
     log(`Fetching payload: disable-updates ...`);
+    const response = await fetch(BIN_URL);
+    if (!response.ok) throw new Error("Failed to fetch payload");
+    const arrayBuffer = await response.arrayBuffer();
+    log(`Payload loaded (${arrayBuffer.byteLength} bytes)`);
+    return new Uint8Array(arrayBuffer);
+}
+
+async function sendToPS4(uint8array, ip) {
+    const url = `http://${ip}:${DEFAULT_PORT}/`;
+    log(`Sending payload to ${url} ...`);
+
+    // send using fetch POST
+    const blob = new Blob([uint8array]);
+    try {
+        const resp = await fetch(url, {
+            method: "POST",
+            body: blob
+        });
+        if (resp.ok) {
+            log("✅ Payload sent successfully!");
+            progress.style.width = "100%";
+        } else {
+            log(`❌ Failed to send payload: ${resp.status}`);
+        }
+    } catch(e) {
+        log(`❌ Error sending payload: ${e}`);
+    }
+}
+
+async function main() {
+    sendBtn.disabled = true;
+    let ps4Ip = "127.0.0.1"; // default to localhost
+    if(ipInput.value) ps4Ip = ipInput.value;
 
     try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Failed to fetch payload");
-
-        const arrayBuffer = await response.arrayBuffer();
-        const size = arrayBuffer.byteLength;
-        log(`Payload loaded (${size} bytes)`);
-
-        // Here you can trigger your PS4 browser payload routine
-        // For example: convert to Blob, then inject into exploit routine
-        const blob = new Blob([arrayBuffer], {type: "application/octet-stream"});
-        log(`Blob created: ${blob.size} bytes`);
-
-        // Example: pseudo call to your payload execution
-        // executePayload(blob);
-
-        log("Ready to execute payload on PS4 browser.");
-    } catch (err) {
-        log("Error loading payload: " + err);
+        const payload = await fetchBin();
+        await sendToPS4(payload, ps4Ip);
+    } catch(e) {
+        log("❌ Error: " + e);
+    } finally {
+        sendBtn.disabled = false;
     }
-});
+}
+
+sendBtn.addEventListener("click", main);
+
+// Optionally auto-trigger on page load
+// window.addEventListener("load", main);
 </script>
 </body>
 </html>
